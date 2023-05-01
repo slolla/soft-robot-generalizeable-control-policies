@@ -125,8 +125,8 @@ def get_args():
         help='number of environment steps to train (default: 10e6)')
     parser.add_argument(
         '--env-name',
-        default='roboticgamedesign-v0',
-        help='environment to train on (default: roboticgamedesign-v0)')
+        default='Walker-v0',
+        help='environment to train on (default: Walker-v0)')
     parser.add_argument(
         '--log-dir',
         default='/tmp/gym/',
