@@ -1,4 +1,4 @@
-name: evogym
+name: softrobots
 channels:
   - defaults
 dependencies:

@@ -142,7 +142,6 @@ def run_ppo(
 
             # Obser reward and next obs
             obs, reward, done, infos = envs.step(action)
-
             # track rewards
             for info in infos:
                 if 'episode' in info.keys():

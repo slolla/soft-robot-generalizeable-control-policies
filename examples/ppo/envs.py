@@ -97,13 +97,13 @@ def make_vec_envs(env_name,
         envs = SubprocVecEnv(envs)
     else:
         envs = DummyVecEnv(envs)
-
+    '''
     if len(envs.observation_space.shape) == 1:
         if gamma is None:
             envs = VecNormalize(envs, norm_reward=False)
         else:
             envs = VecNormalize(envs, gamma=gamma)
-
+    '''
     envs = VecPyTorch(envs, device)
 
     if num_frame_stack is not None:
@@ -197,6 +197,7 @@ class VecNormalize(VecNormalize_):
 
     def _obfilt(self, obs, update=True):
         if self.obs_rms:
+            print("SELF OBSRMS")
             if self.training and update:
                 self.obs_rms.update(obs)
             obs = np.clip((obs - self.obs_rms.mean) /
@@ -204,6 +205,7 @@ class VecNormalize(VecNormalize_):
                           -self.clipob, self.clipob)
             return obs
         else:
+            print("NO FILTER")
             return obs
 
     def train(self):
