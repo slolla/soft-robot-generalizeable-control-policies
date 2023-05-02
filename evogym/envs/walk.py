@@ -27,7 +27,7 @@ class WalkingFlat(BenchmarkBase):
         num_robot_points = self.object_pos_at_time(self.get_time(), "robot").size
 
         self.action_space = spaces.Box(low= 0.6, high=1.6, shape=(num_actuators,), dtype=np.float)
-        self.observation_space = spaces.Box(low=-100.0, high=100.0, shape=(num_robot_points,), dtype=np.float)
+        self.observation_space = spaces.Box(low=-100.0, high=100.0, shape=(num_robot_points + 2,), dtype=np.float)
 
     def step(self, action):
 
@@ -80,7 +80,6 @@ class WalkingFlat(BenchmarkBase):
         points_pos = self.object_pos_at_time(self.get_time(), "robot")
         center_of_mass = np.expand_dims(np.mean(points_pos, axis=-1), 1)
         relative_pos = points_pos - center_of_mass
-        print(list(relative_pos))
         flattened_pos = relative_pos.flatten()
         return flattened_pos
 

@@ -1,0 +1,14 @@
+# This is a super simple pod configuration file that runs nvidia-smi and exits
+apiVersion: v1
+kind: Pod
+metadata:
+  name: run-norm
+spec:
+  containers:
+    - name: skipper-pod
+      image: xanamini/sadhana:evogym-test # use our DRL base image
+      command:
+        - "/bin/bash"
+        - "-c" # run with bash and pass in the args below
+      args:
+        - "python3 -u examples/run_ga.py --env-name 'Walker-v0' --use-gae --lr 2.5e-4 --use-linear-lr-decay --clip-param 0.1 --value-loss-coef 0.5 --entropy-coef 0.01 --num-steps 128 --num-processes 4 --eval-interval 50 --num-mini-batch 4"

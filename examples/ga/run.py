@@ -16,7 +16,7 @@ from evogym import sample_robot, hashable
 import utils.mp_group as mp
 from utils.algo_utils import get_percent_survival_evals, mutate, TerminationCondition, Structure
 
-def run_ga(experiment_name, structure_shape, pop_size, max_evaluations, train_iters, num_cores):
+def run_ga(experiment_name, structure_shape, pop_size, max_evaluations, train_iters, num_cores, root_dir):
     print()
 
     ### STARTUP: MANAGE DIRECTORIES ###

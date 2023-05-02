@@ -9,7 +9,7 @@ from ppo.envs import make_vec_envs
 def evaluate(
     num_evals, 
     actor_critic, 
-    obs_rms, 
+    #obs_rms, 
     env_name, 
     robot_structure, 
     seed, 

@@ -206,8 +206,8 @@ def run_ppo(
         if (args.eval_interval is not None and len(episode_rewards) > 1
                 and j % args.eval_interval == 0):
             
-            obs_rms = utils.get_vec_normalize(envs).obs_rms
-            determ_avg_reward = evaluate(args.num_evals, actor_critic, obs_rms, args.env_name, structure, args.seed,
+            #obs_rms = utils.get_vec_normalize(envs).obs_rms
+            determ_avg_reward = evaluate(args.num_evals, actor_critic, args.env_name, structure, args.seed,
                      args.num_processes, eval_log_dir, device)
 
             if verbose:
@@ -227,7 +227,6 @@ def run_ppo(
                     print(f'Saving {temp_path} with avg reward {max_determ_avg_reward}\n')
                 torch.save([
                     actor_critic,
-                    getattr(utils.get_vec_normalize(envs), 'obs_rms', None)
                 ], temp_path)
 
         # return upon reaching the termination condition
