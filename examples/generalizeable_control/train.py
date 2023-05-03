@@ -39,6 +39,38 @@ class GeneralizeableControllerTrainer:
         train_dataset = self.get_dataset_from_gens(train_gens)
         test_dataset = self.get_dataset_from_gens(test_gens)
         return train_dataset, test_dataset
+    
+    def create_within_robot_datasets(self):
+        train_states = []
+        train_actions = []
+        train_masks = []
+
+        test_states = []
+        test_actions = []
+        test_masks = []
+
+        for gen in range(self.generations):
+            path = os.path.join(self.data_path, "generation_{}/rollouts/*.npz".format(gen))
+            filenames = glob.glob(path)
+            for f in filenames:
+                rollout = np.load(f)
+                state, action = rollout["state"], rollout["action"]
+                mask = state[:, 3, :, :,] + state[:, 4, :, :]
+                train_indices = np.random.choice(len(state), int(0.7*len(state)))
+                test_indices = [i for i in range(len(state)) if i not in train_indices]
+
+                train_states.extend(state[train_indices])
+                test_states.extend(state[test_indices])
+
+                train_actions.extend(action[train_indices])
+                test_actions.extend(action[test_indices])
+
+                train_masks.extend(mask[train_indices])
+                test_masks.extend(mask[test_indices])
+        
+        train_dataset = TensorDataset(torch.FloatTensor(train_states), torch.FloatTensor(train_actions), torch.FloatTensor(train_masks))
+        test_dataset = TensorDataset(torch.FloatTensor(test_states), torch.FloatTensor(test_actions), torch.FloatTensor(test_masks))
+        return train_dataset, test_dataset
         
     def get_dataset_from_gens(self, gens):
         all_states = []
@@ -103,7 +135,10 @@ class GeneralizeableControllerTrainer:
         return running_loss/(i * 16)
         
     def collect_and_train(self):
-        train_rollout_dataset, test_rollout_dataset = self.create_across_robot_datasets()
+        if self.within_robot:
+            train_rollout_dataset, test_rollout_dataset = self.create_within_robot_datasets()
+        else:
+            train_rollout_dataset, test_rollout_dataset = self.create_across_robot_datasets()
         
         train_rollout_dataloader = DataLoader(train_rollout_dataset, shuffle=True, batch_size=16)
         test_rollout_dataloader = DataLoader(test_rollout_dataset, shuffle=True, batch_size=16)
@@ -118,5 +153,5 @@ class GeneralizeableControllerTrainer:
         plt.plot(np.arange(len(train_losses)), test_losses, label="test")
         plt.savefig("/home/sadhana/soft-robot-generalizeable-control-policies/examples/generalizeable_control/test.png")
 
-trainer = GeneralizeableControllerTrainer("/home/sadhana/soft-robot-generalizeable-control-policies/data/walker-no-normalization", 10)
+trainer = GeneralizeableControllerTrainer("/home/sadhana/soft-robot-generalizeable-control-policies/data/walker-no-normalization", 10, within_robot=True)
 trainer.collect_and_train()

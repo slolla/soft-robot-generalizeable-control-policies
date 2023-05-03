@@ -1,11 +1,11 @@
 import numpy as np
 import os
-
+import matplotlib.pyplot as plt 
 class GeneralizeableRollouts:
     def __init__(self, path, robot, num_steps, robot_structure):
         self.robot = robot
         self.num_steps = num_steps
-        self.output_path = os.path.join(path, "rollouts", str(robot) + ".npz")
+        self.output_path = os.path.join(path, "rollouts", str(robot))
 
         self.num_points = robot_structure.shape[0] + 1
         self.relative_position = np.zeros((num_steps, self.num_points**2, 2))
@@ -76,8 +76,8 @@ class GeneralizeableRollouts:
 
         return stacked_state, action
 
-    def save(self):
+    def save(self, path_add=''):
         final_state, final_action = self.reshape()
-        np.savez(self.output_path, state=final_state, action=final_action)
+        np.savez(self.output_path + str(path_add) + ".npz", state=final_state, action=final_action)
 
 
