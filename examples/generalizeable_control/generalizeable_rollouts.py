@@ -43,12 +43,12 @@ class GeneralizeableRollouts:
     
     def get_unique_indices(self, relative_position):
         _, self.unique_indices = np.unique(relative_position.T, return_index=True, axis=0)
+        self.unique_indices = sorted(self.unique_indices)
         
     
     def update_state(self, step, relative_position, relative_velocity, com_vel, orientation):
         if self.unique_indices is None:
             self.get_unique_indices(relative_position)
-        
         self.relative_position[step][self.full_mask] = relative_position.T[self.unique_indices]
         self.relative_velocity[step][self.full_mask] = relative_velocity.T[self.unique_indices]
         self.com_vel[step] = com_vel
