@@ -5,6 +5,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from torch.utils.data import TensorDataset, DataLoader
 from model import UniversalController
+from evaluate import evaluate_robot
+import matplotlib
+matplotlib.use('Agg')
 
 class MaskedMSELoss(torch.nn.Module):
     def __init__(self):
@@ -23,7 +26,7 @@ class GeneralizeableControllerTrainer:
         self.generations = generations
         self.actor_loss = MaskedMSELoss()
         self.model = UniversalController(13)
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-5)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-4)
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         self.model = self.model.to(self.device)
         print("USING", self.device)
@@ -33,7 +36,7 @@ class GeneralizeableControllerTrainer:
             train_gens = np.arange(self.generations)
             test_gens = [self.generations]
         else:
-            test_gens = [np.random.choice(self.generations)]
+            test_gens = [5]
             train_gens = [i for i in np.arange(self.generations) if i not in test_gens]
         
         train_dataset = self.get_dataset_from_gens(train_gens)
@@ -108,11 +111,10 @@ class GeneralizeableControllerTrainer:
             running_loss += loss.item()
             epoch_loss += loss.item()
             if i % 1000 == 999:
-                last_loss = running_loss / 1000 # loss per batch
+                last_loss = running_loss / (1000 * 16) # loss per batch
                 print('  batch {} loss: {}'.format(i + 1, last_loss))
                 running_loss = 0.
-        print("dividing by", i)
-        print('epoch', epoch, 'loss', epoch_loss/i)
+        print('epoch', epoch, 'loss', epoch_loss/(i * 16))
         return epoch_loss/(i * 16)
         
     
@@ -130,8 +132,7 @@ class GeneralizeableControllerTrainer:
                 loss = actor_loss
 
             running_loss += loss.item()
-        print("dividing by", i)
-        print("testing epoch", epoch, "loss: ", running_loss/i)
+        print("testing epoch", epoch, "loss: ", running_loss/(i * 16))
         return running_loss/(i * 16)
         
     def collect_and_train(self):
@@ -145,13 +146,51 @@ class GeneralizeableControllerTrainer:
 
         train_losses = []
         test_losses = []
-        num_epochs = 50
+        num_epochs = 30
         for epoch in range(num_epochs):
             train_losses.append(self._train(train_rollout_dataloader, epoch))
             test_losses.append(self._test(test_rollout_dataloader, epoch))
+        torch.save(self.model.state_dict(), "large_model.pt")
+        self.plot_results(train_losses, test_losses)
+    
+    def plot_results(self, train_losses, test_losses):
         plt.plot(np.arange(len(train_losses)), train_losses, label="train")
         plt.plot(np.arange(len(train_losses)), test_losses, label="test")
-        plt.savefig("/home/sadhana/soft-robot-generalizeable-control-policies/examples/generalizeable_control/test.png")
+        plt.savefig("/home/sadhana/soft-robot-generalizeable-control-policies/examples/generalizeable_control/test_small_sequential_05_05.png")
+        plt.clf()
+        plt.plot(np.arange(len(train_losses)), test_losses, label="test")
+        plt.savefig("/home/sadhana/soft-robot-generalizeable-control-policies/examples/generalizeable_control/sequential_small_testonly_05_05.png")
+        plt.clf()
 
-trainer = GeneralizeableControllerTrainer("/home/sadhana/soft-robot-generalizeable-control-policies/data/walker-no-normalization", 10, within_robot=True)
-trainer.collect_and_train()
+if __name__ == '__main__':
+    
+    trainer = GeneralizeableControllerTrainer("/home/sadhana/soft-robot-generalizeable-control-policies/data/walker-no-normalization", 10, within_robot=False, sequential=True)
+    trainer.collect_and_train()
+    
+    model = UniversalController(13)
+    model.load_state_dict(torch.load("large_model.pt"))
+    model.eval()
+    actual_fitness_plot = []
+    predicted_fitness_plot = []
+
+    for generation in range(11):
+        path = "/home/sadhana/soft-robot-generalizeable-control-policies/data/walker-no-normalization/generation_{}".format(generation)
+        outfile = os.path.join(path, "output.txt")
+        actual_fitness = np.zeros((25, ))
+        with open(outfile, "r") as f:
+            lines = f.readlines()
+            lines = [line.strip().split("\t") for line in lines]
+            for line in lines:
+                actual_fitness[int(line[0])] = float(line[-1])
+        
+        for robot in range(25):
+            morphology = np.load(os.path.join(path, "structure/{}.npz".format(robot)))
+            morphology = morphology.f.arr_0, morphology.f.arr_1
+            
+            fitness = evaluate_robot(model, "Walker-v0", morphology, 4, "cpu", path, robot)
+            print("finished evaluation for {}-{}: result is {}, actual fitness is {}".format(generation, robot, fitness, actual_fitness[robot]))
+            actual_fitness_plot.append(actual_fitness[robot])
+            predicted_fitness_plot.append(fitness)
+    plt.scatter(actual_fitness_plot, predicted_fitness_plot)
+    plt.savefig("correlation.png")
+        
